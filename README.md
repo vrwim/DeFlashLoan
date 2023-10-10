@@ -1,66 +1,16 @@
-## Foundry
+# DeFlashLoan
 
-**Foundry is a blazing fast, portable and modular toolkit for Ethereum application development written in Rust.**
+- Users can deposit ERC20 tokens
+    - Receive liquidity tokens from that, for liquidity and bookkeeping
+    - Users can choose a fee level that they want to receive: lower -> more flash loans; higher -> less flash loans, more commission per flash loan
+- Users can withdraw ERC20 tokens
+    - By burning liquidity tokens
+- Users can take a flash loan and then must return `amount * (1 + fee percentage)`
+    - Commission is distributed over users that deposited
+- Commission calculations happen based on the highest percentage that was needed for the flash loan
 
-Foundry consists of:
-
--   **Forge**: Ethereum testing framework (like Truffle, Hardhat and DappTools).
--   **Cast**: Swiss army knife for interacting with EVM smart contracts, sending transactions and getting chain data.
--   **Anvil**: Local Ethereum node, akin to Ganache, Hardhat Network.
--   **Chisel**: Fast, utilitarian, and verbose solidity REPL.
-
-## Documentation
-
-https://book.getfoundry.sh/
-
-## Usage
-
-### Build
-
-```shell
-$ forge build
-```
-
-### Test
-
-```shell
-$ forge test
-```
-
-### Format
-
-```shell
-$ forge fmt
-```
-
-### Gas Snapshots
-
-```shell
-$ forge snapshot
-```
-
-### Anvil
-
-```shell
-$ anvil
-```
-
-### Deploy
-
-```shell
-$ forge script script/Counter.s.sol:CounterScript --rpc-url <your_rpc_url> --private-key <your_private_key>
-```
-
-### Cast
-
-```shell
-$ cast <subcommand>
-```
-
-### Help
-
-```shell
-$ forge --help
-$ anvil --help
-$ cast --help
-```
+## Open questions
+- Liquidity is not possible :( Either I have a fixed fee or I have different liquidity tokens per ERC20 token (one per fee level)
+    - Possibly a DAO-model to decide on the fee level per token?
+- Need to research reinserting rewards in the pool to compound interest
+- How to efficiently store staking rewards? rewardDebt... But what about reinserting rewards??
