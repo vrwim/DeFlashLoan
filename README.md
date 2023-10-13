@@ -12,5 +12,7 @@
 ## Open questions
 - Liquidity is not possible :( Either I have a fixed fee or I have different liquidity tokens per ERC20 token (one per fee level)
     - Possibly a DAO-model to decide on the fee level per token?
+    - OR: you have the liquidity token accumulate the rewards, transferring then pays out the reward, resetting the token and giving the new owner rewards
 - Need to research reinserting rewards in the pool to compound interest
-- How to efficiently store staking rewards? rewardDebt... But what about reinserting rewards??
+    - Just calculate the thisFeeAmount with the commissionToDistribute
+- Can a user submit multiple fee levels?
