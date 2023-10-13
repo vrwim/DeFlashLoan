@@ -1,11 +1,12 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.21;
 
-import "openzeppelin-contracts/token/ERC1155/ERC1155.sol";
-import "openzeppelin-contracts/access/Ownable.sol";
-import "openzeppelin-contracts/token/ERC1155/extensions/ERC1155Burnable.sol";
-import "openzeppelin-contracts/token/ERC1155/extensions/ERC1155Supply.sol";
-import "./IERC3156FlashLender.sol";
+import "openzeppelin-contracts/contracts/token/ERC1155/ERC1155.sol";
+import "openzeppelin-contracts/contracts/access/Ownable.sol";
+import "openzeppelin-contracts/contracts/token/ERC1155/extensions/ERC1155Burnable.sol";
+import "openzeppelin-contracts/contracts/token/ERC1155/extensions/ERC1155Supply.sol";
+import "openzeppelin-contracts/contracts/interfaces/IERC3156FlashLender.sol";
+import "openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
 
 contract DeFlashLoan is ERC1155, Ownable, ERC1155Burnable, ERC1155Supply, IERC3156FlashLender {
     struct Pool {
@@ -27,6 +28,8 @@ contract DeFlashLoan is ERC1155, Ownable, ERC1155Burnable, ERC1155Supply, IERC31
         uint rewardDebt;
     }
 
+    // TODO: events!
+
     /// @dev Token address => lowest fee amount (start of doubly linked list)
     mapping(address => uint) public lowestFeeAmount;
 
@@ -39,7 +42,7 @@ contract DeFlashLoan is ERC1155, Ownable, ERC1155Burnable, ERC1155Supply, IERC31
     /// @dev User address => token address => fee level => user info
     mapping(address => mapping(address => mapping(uint => UserInfo))) public userInfo;
 
-    constructor(address initialOwner) ERC1155("") Ownable(initialOwner) { }
+    constructor() ERC1155("") Ownable(msg.sender) { }
 
     function deposit(address token, uint amount, uint fee) external {
         // Does fee exist?
@@ -91,7 +94,7 @@ contract DeFlashLoan is ERC1155, Ownable, ERC1155Burnable, ERC1155Supply, IERC31
             }
         }
         // Give liquidity tokens to user
-        _mint(msg.sender, token, amount, 0x00);
+        _mint(msg.sender, uint(uint160(token)), amount, "");
         // Save user info
         userInfo[msg.sender][token][fee].amount += amount;
         // Add to total available
@@ -132,7 +135,7 @@ contract DeFlashLoan is ERC1155, Ownable, ERC1155Burnable, ERC1155Supply, IERC31
             }
         }
         // Burn liquidity tokens
-        _burn(msg.sender, token, amount);
+        _burn(msg.sender, uint(uint160(token)), amount);
         // Subtract from total available
         totalAvailable[token] -= amount;
 
@@ -140,16 +143,18 @@ contract DeFlashLoan is ERC1155, Ownable, ERC1155Burnable, ERC1155Supply, IERC31
         IERC20(token).transfer(msg.sender, amount);
     }
 
-    function distributeRewards(address token, uint feeLevel) external returns (uint){
+    function distributeRewards(address token, uint feeLevel) public returns (uint){
         UserInfo storage user = userInfo[msg.sender][token][feeLevel];
         Pool storage pool = pools[token][feeLevel];
         // Check if user has rewards for token and fee level
         uint rewards = user.amount * (pool.rewardPerToken - user.rewardDebt);
-        require(rewards > 0, "DeFlashLoan: No rewards to distribute");
+        if(rewards == 0) return 0;
         // Yes: transfer rewards to user
         IERC20(token).transfer(msg.sender, rewards);
         // Update user info
         user.rewardDebt = pool.rewardPerToken;
+
+        return rewards;
     }
 
     // ERC1155
