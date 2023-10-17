@@ -280,7 +280,8 @@ contract DeFlashLoan is ERC1155, Ownable, ERC1155Burnable, ERC1155Supply, IERC31
         // Start with the lowest fee in the pool
         uint searchFee = lowestFeeAmount[token];
         // Loop until `fee`
-        while(searchFee <= feeLevel && searchFee != 0) {
+        while(searchFee < feeLevel && searchFee != 0) {
+            console2.log("Updating thisFeeAmount for fee level:", searchFee);
             // Update rewardPerToken for this fee level
             pools[token][searchFee].rewardPerToken += fee * REWARD_FEE_DIVISOR / amount;
             pools[token][searchFee].thisFeeAmount += fee * pools[token][searchFee].thisFeeAmount / amount;
@@ -290,8 +291,11 @@ contract DeFlashLoan is ERC1155, Ownable, ERC1155Burnable, ERC1155Supply, IERC31
 
         // Update rewardPerToken for `fee`
         if(lowestFeeAmount[token] != feeLevel) {
+            console2.log("Updating thisFeeAmount for fee level:", feeLevel);
+            console2.log("DeFlashLoan: flashLoan: pools[token][feeLevel].rewardPerToken", pools[token][feeLevel].rewardPerToken);
             pools[token][feeLevel].rewardPerToken += fee * REWARD_FEE_DIVISOR * (pools[token][feeLevel].thisFeeAmount - overshoot) / pools[token][feeLevel].thisFeeAmount / amount;
-            pools[token][feeLevel].thisFeeAmount += fee * (pools[token][feeLevel].thisFeeAmount - overshoot) / pools[token][feeLevel].thisFeeAmount / amount;
+            pools[token][feeLevel].thisFeeAmount += fee * (pools[token][feeLevel].thisFeeAmount - overshoot) / amount;
+            console2.log("DeFlashLoan: flashLoan: pools[token][feeLevel].rewardPerToken", pools[token][feeLevel].rewardPerToken);
         }
 
         // Update totalAvailable for this token

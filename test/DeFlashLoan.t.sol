@@ -123,14 +123,12 @@ contract DeFlashLoanTest is Test, IERC1155Receiver {
         (uint thisFeeAmount, uint rewardPerToken, uint previousFee, uint nextFee) = myContract.pools(address(dummyToken), loanFee / 2);
         console2.log("loanFee / 2", loanFee / 2);
         assertEq(thisFeeAmount, user1Deposit + user1Deposit * loanFee / REWARD_FEE_DIVISOR, "thisFeeAmount");
-        console2.log("loanFee * REWARD_FEE_DIVISOR / user1Deposit", loanFee * REWARD_FEE_DIVISOR / user1Deposit);
-        assertEq(rewardPerToken, fee * REWARD_FEE_DIVISOR / (user1Deposit + user2Deposit) , "rewardPerToken");
+        assertEq(rewardPerToken, fee * REWARD_FEE_DIVISOR / (user1Deposit + user2Deposit), "rewardPerToken");
         assertEq(previousFee, 0, "previousFee");
         assertEq(nextFee, loanFee, "nextFee");
 
         (uint thisFeeAmount2, uint rewardPerToken2, uint previousFee2, uint nextFee2) = myContract.pools(address(dummyToken), loanFee);
         assertEq(thisFeeAmount2, user2Deposit + user2Deposit * loanFee / REWARD_FEE_DIVISOR, "thisFeeAmount2");
-        console2.log("loanFee * REWARD_FEE_DIVISOR / user1Deposit", loanFee * REWARD_FEE_DIVISOR / user1Deposit);
         assertEq(rewardPerToken2, fee * REWARD_FEE_DIVISOR / (user1Deposit + user2Deposit), "rewardPerToken2");
         assertEq(previousFee2, loanFee / 2, "previousFee2");
         assertEq(nextFee2, 0, "nextFee2");
