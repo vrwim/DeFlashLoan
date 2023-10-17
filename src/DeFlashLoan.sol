@@ -2,14 +2,11 @@
 pragma solidity ^0.8.21;
 
 import {console2} from "forge-std/Test.sol";
-import "openzeppelin-contracts/contracts/token/ERC1155/ERC1155.sol";
 import "openzeppelin-contracts/contracts/access/Ownable.sol";
-import "openzeppelin-contracts/contracts/token/ERC1155/extensions/ERC1155Burnable.sol";
-import "openzeppelin-contracts/contracts/token/ERC1155/extensions/ERC1155Supply.sol";
 import "openzeppelin-contracts/contracts/interfaces/IERC3156FlashLender.sol";
 import "openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
 
-contract DeFlashLoan is ERC1155, Ownable, ERC1155Burnable, ERC1155Supply, IERC3156FlashLender {
+contract DeFlashLoan is IERC3156FlashLender {
     struct Pool {
         /// @dev The amount of tokens in the pool at this fee level
         uint thisFeeAmount;
@@ -44,16 +41,9 @@ contract DeFlashLoan is ERC1155, Ownable, ERC1155Burnable, ERC1155Supply, IERC31
     /// @dev The fee divisor, thus a fee of 10_000 is 1%
     uint constant public REWARD_FEE_DIVISOR = 1_000_000;
 
-    constructor() ERC1155("") Ownable(msg.sender) { }
-
     function deposit(address token, uint amount, uint fee) external {
-        console2.log("DeFlashLoan: deposit: token", token);
-        console2.log("DeFlashLoan: deposit: amount", amount);
-        console2.log("DeFlashLoan: deposit: fee", fee);
-
         // Does fee exist?
         if(pools[token][fee].thisFeeAmount > 0) {
-            console2.log("DeFlashLoan: fee level exists");
             // Yes: add amount to mapping
             pools[token][fee].thisFeeAmount += amount;
         } else {
@@ -61,7 +51,6 @@ contract DeFlashLoan is ERC1155, Ownable, ERC1155Burnable, ERC1155Supply, IERC31
             // Search in pools[token] to find a place to insert in the linked list
             // If this fee is lower than the lowest fee, insert it at the start of the list
             if(fee < lowestFeeAmount[token] || lowestFeeAmount[token] == 0) {
-                console2.log("DeFlashLoan: insert at start");
                 uint lowestFee = lowestFeeAmount[token];
 
                 // Insert at start of list
@@ -78,7 +67,6 @@ contract DeFlashLoan is ERC1155, Ownable, ERC1155Burnable, ERC1155Supply, IERC31
             } else {
                 // Start with the lowest fee in the pool
                 uint previousFee = lowestFeeAmount[token];
-                console2.log("DeFlashLoan: insert between");
                 // Search for the right place to insert, after this while loop previousFee will be the fee level after the one we want to insert
                 while(previousFee < fee && pools[token][previousFee].nextFee != 0) {
                     previousFee = pools[token][previousFee].nextFee;
@@ -102,15 +90,10 @@ contract DeFlashLoan is ERC1155, Ownable, ERC1155Burnable, ERC1155Supply, IERC31
                 });
             }
         }
-        // Give liquidity tokens to user
-        _mint(msg.sender, uint(uint160(token)), amount, "");
         // Save user info
         userInfo[msg.sender][token][fee].amount += amount;
         // Add to total available
         totalAvailable[token] += amount;
-
-        console2.log("DeFlashLoan: deposit: lowestFeeAmount[token]", lowestFeeAmount[token]);
-        console2.log("DeFlashLoan: deposit: totalAvailable[token]", totalAvailable[token]);
 
         // Take ERC20 tokens from user
         IERC20(token).transferFrom(msg.sender, address(this), amount);
@@ -146,8 +129,6 @@ contract DeFlashLoan is ERC1155, Ownable, ERC1155Burnable, ERC1155Supply, IERC31
                 delete pools[token][fee];
             }
         }
-        // Burn liquidity tokens
-        _burn(msg.sender, uint(uint160(token)), amount);
         // Subtract from total available
         totalAvailable[token] -= amount;
 
@@ -158,10 +139,6 @@ contract DeFlashLoan is ERC1155, Ownable, ERC1155Burnable, ERC1155Supply, IERC31
     function distributeRewards(address token, uint feeLevel) public returns (uint){
         UserInfo storage user = userInfo[msg.sender][token][feeLevel];
         Pool storage pool = pools[token][feeLevel];
-
-        console2.log("DeFlashLoan: distributeRewards: user.amount: ", user.amount);
-        console2.log("DeFlashLoan: distributeRewards: pool.rewardPerToken: ", pool.rewardPerToken);
-        console2.log("DeFlashLoan: distributeRewards: user.rewardDebt: ", user.rewardDebt);
 
         // Check if user has rewards for token and fee level
         uint rewards = user.amount * (pool.rewardPerToken - user.rewardDebt) / REWARD_FEE_DIVISOR;
@@ -185,21 +162,13 @@ contract DeFlashLoan is ERC1155, Ownable, ERC1155Burnable, ERC1155Supply, IERC31
         uint fee = lowestFeeAmount[token];
         uint runningAmount = pools[token][fee].thisFeeAmount;
 
-        console2.log("DeFlashLoan: flashFeeAndOvershoot: fee: ", fee);
-        console2.log("DeFlashLoan: flashFeeAndOvershoot: runningAmount: ", runningAmount);
-        console2.log("DeFlashLoan: flashFeeAndOvershoot: amount: ", amount);
-
         // While amount is less than summed amounts, check next fee amount
         while(amount > runningAmount && pools[token][fee].nextFee != 0) {
-            console2.log("DeFlashLoan: flashFeeAndOvershoot: runningAmount: ", runningAmount);
             // Check next fee amount
             fee = pools[token][fee].nextFee;
             // Update running amount
             runningAmount += pools[token][fee].thisFeeAmount;
         }
-
-        console2.log("DeFlashLoan: flashFeeAndOvershoot: fee: ", fee);
-        console2.log("DeFlashLoan: flashFeeAndOvershoot: runningAmount: ", runningAmount);
 
         // Is amount less than summed amounts?
         require(amount <= runningAmount, "DeFlashLoan: Not enough liquidity available");
@@ -207,14 +176,6 @@ contract DeFlashLoan is ERC1155, Ownable, ERC1155Burnable, ERC1155Supply, IERC31
         // Return fee and overshoot of top fee level
         return (fee, runningAmount - amount);
     }
-
-    // #region ERC1155
-
-    function setURI(string memory newuri) public onlyOwner {
-        _setURI(newuri);
-    }
-
-    // #endregion
 
     // #region IERC3156FlashLender
 
@@ -235,8 +196,6 @@ contract DeFlashLoan is ERC1155, Ownable, ERC1155Burnable, ERC1155Supply, IERC31
      */
     function flashFee(address token,uint256 amount) public view returns (uint256) {
         (uint feeLevel, ) = flashFeeAndOvershoot(token, amount);
-        console2.log("DeFlashLoan: flashFee: feeLevel", feeLevel);
-        console2.log("DeFlashLoan: flashFee: amount", amount);
         return feeLevel * amount / REWARD_FEE_DIVISOR;
     }
 
@@ -281,7 +240,6 @@ contract DeFlashLoan is ERC1155, Ownable, ERC1155Burnable, ERC1155Supply, IERC31
         uint searchFee = lowestFeeAmount[token];
         // Loop until `fee`
         while(searchFee < feeLevel && searchFee != 0) {
-            console2.log("Updating thisFeeAmount for fee level:", searchFee);
             // Update rewardPerToken for this fee level
             pools[token][searchFee].rewardPerToken += fee * REWARD_FEE_DIVISOR / amount;
             pools[token][searchFee].thisFeeAmount += fee * pools[token][searchFee].thisFeeAmount / amount;
@@ -291,11 +249,8 @@ contract DeFlashLoan is ERC1155, Ownable, ERC1155Burnable, ERC1155Supply, IERC31
 
         // Update rewardPerToken for `fee`
         if(lowestFeeAmount[token] != feeLevel) {
-            console2.log("Updating thisFeeAmount for fee level:", feeLevel);
-            console2.log("DeFlashLoan: flashLoan: pools[token][feeLevel].rewardPerToken", pools[token][feeLevel].rewardPerToken);
             pools[token][feeLevel].rewardPerToken += fee * REWARD_FEE_DIVISOR * (pools[token][feeLevel].thisFeeAmount - overshoot) / pools[token][feeLevel].thisFeeAmount / amount;
             pools[token][feeLevel].thisFeeAmount += fee * (pools[token][feeLevel].thisFeeAmount - overshoot) / amount;
-            console2.log("DeFlashLoan: flashLoan: pools[token][feeLevel].rewardPerToken", pools[token][feeLevel].rewardPerToken);
         }
 
         // Update totalAvailable for this token
@@ -305,13 +260,4 @@ contract DeFlashLoan is ERC1155, Ownable, ERC1155Burnable, ERC1155Supply, IERC31
     }
 
     // #endregion
-
-    // The following functions are overrides required by Solidity.
-
-    function _update(address from, address to, uint256[] memory ids, uint256[] memory values)
-        internal
-        override(ERC1155, ERC1155Supply)
-    {
-        super._update(from, to, ids, values);
-    }
 }

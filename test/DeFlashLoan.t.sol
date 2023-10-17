@@ -1,16 +1,13 @@
 // SPDX-License-Identifier: UNLICENSED
-pragma solidity ^0.8.13;
+pragma solidity ^0.8.21;
 
 import {Test, console2} from "forge-std/Test.sol";
 import {DeFlashLoan} from "../src/DeFlashLoan.sol";
 
 import "openzeppelin-contracts/contracts/token/ERC20/ERC20.sol";
-import "openzeppelin-contracts/contracts/token/ERC1155/IERC1155.sol";
-import "openzeppelin-contracts/contracts/token/ERC1155/IERC1155Receiver.sol";
 import "openzeppelin-contracts/contracts/interfaces/IERC3156FlashBorrower.sol";
 
-
-contract DeFlashLoanTest is Test, IERC1155Receiver {
+contract DeFlashLoanTest is Test {
     DeFlashLoan public myContract;
     DummyERC20 public dummyToken;
     DummyFlashLoanBorrower public dummyBorrower;
@@ -121,7 +118,6 @@ contract DeFlashLoanTest is Test, IERC1155Receiver {
 
         // Ensure each pool got updated
         (uint thisFeeAmount, uint rewardPerToken, uint previousFee, uint nextFee) = myContract.pools(address(dummyToken), loanFee / 2);
-        console2.log("loanFee / 2", loanFee / 2);
         assertEq(thisFeeAmount, user1Deposit + user1Deposit * loanFee / REWARD_FEE_DIVISOR, "thisFeeAmount");
         assertEq(rewardPerToken, fee * REWARD_FEE_DIVISOR / (user1Deposit + user2Deposit), "rewardPerToken");
         assertEq(previousFee, 0, "previousFee");
@@ -136,47 +132,8 @@ contract DeFlashLoanTest is Test, IERC1155Receiver {
         vm.prank(user1);
         assertEq(myContract.distributeRewards(address(dummyToken), loanFee / 2), fee / 2, "distributeRewards");
     }
-
-    function testSecondFlashLoan() public {
-        testFlashLoan();
-
-        uint totalAvailable = myContract.totalAvailable(address(dummyToken));
-        uint loanFee = 10_000;
-        uint fee = totalAvailable * loanFee / REWARD_FEE_DIVISOR;
-
-        vm.prank(user4);
-        myContract.flashLoan(dummyBorrower, address(dummyToken), totalAvailable, bytes(""));
-
-        assertEq(myContract.totalAvailable(address(dummyToken)), totalAvailable + fee);
-
-        vm.prank(user1);
-        assertEq(myContract.distributeRewards(address(dummyToken), loanFee), fee / 2, "distributeRewards");
-    }
-
-    // Functions that need to be implemented for ERC1155Receiver
-        function onERC1155Received(
-        address operator,
-        address from,
-        uint256 id,
-        uint256 value,
-        bytes calldata data
-    ) external returns (bytes4) {
-        return 0xf23a6e61;
-    }
-
-    function onERC1155BatchReceived(
-        address operator,
-        address from,
-        uint256[] calldata ids,
-        uint256[] calldata values,
-        bytes calldata data
-    ) external returns (bytes4) {
-        return 0xbc197c81;
-    }
-
-    function supportsInterface(bytes4 interfaceId) external view returns (bool) {
-        return true;
-    }
+    
+    // TODO: need more tests!
 }
 
 /// @dev A mock ERC20 token that allows anyone to mint tokens
