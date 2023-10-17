@@ -148,7 +148,7 @@ contract DummyERC20 is ERC20 {
 
 /// @dev A mock flash loan borrower
 contract DummyFlashLoanBorrower is IERC3156FlashBorrower {
-    function onFlashLoan(address initiator, address token, uint256 amount, uint256 fee, bytes calldata data) external returns (bytes32) {
+    function onFlashLoan(address, address token, uint256 amount, uint256 fee, bytes calldata) external returns (bytes32) {
         DummyERC20(token).mint(address(this), fee);
         DummyERC20(token).approve(msg.sender, amount + fee);
         return keccak256("ERC3156FlashBorrower.onFlashLoan");
