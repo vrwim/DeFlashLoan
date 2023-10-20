@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link href="https://unpkg.com/tailwindcss@^1.0/dist/tailwind.min.css" rel="stylesheet">
+    <title>Your Smart Contract Frontend</title>
+    <link rel="stylesheet" href="style.css">
+    <script src="main.js" defer type="module"></script>
+    <!-- favicon -->
+    <link rel="icon" href="assets/icon.png" type="image/png" sizes="16x16">
+</head>
+
+<body class="bg-gray-200 p-10">
+    <header class="pb-6 flex justify-between items-center">
+        <!-- Icon and Title on the left -->
+        <div class="flex items-center">
+            <img src="assets/icon.png" alt="Your Icon" class="w-16 h-16 mr-2 rounded">
+            <!-- Adjust the width and height as per your icon's dimensions -->
+            <h1 class="text-3xl font-bold pl-4">DeFlashLoan</h1>
+        </div>
+
+        <!-- Login Button on the right -->
+        <button id="login-btn" class="bg-blue-500 text-white p-2 rounded">LOGIN</button>
+    </header>
+    <main class="grid-layout">
+        <!-- Pool Statistics / Graph -->
+        <div class="bg-white p-6 shadow-lg rounded-lg" style="grid-area: graph;">
+            <h2 class="text-xl font-semibold mb-4">Pool Statistics</h2>
+        </div>
+
+        <!-- Deposit -->
+        <div class="bg-white p-6 shadow-lg rounded-lg" style="grid-area: deposit;">
+            <form>
+                <div class="mb-4">
+                    <label class="block mb-2">Deposit</label>
+                    <div class="flex items-center">
+                        <!-- Input value -->
+                        <input id="deposit-input" type="text" placeholder="Enter amount" class="flex-grow mr-2 p-2 border rounded"
+                            style="flex: 1;" size="1">
+
+                        <!-- Dropdown for token selection -->
+                        <select id="deposit-select" class="flex-grow p-2 border rounded" style="flex: 1;">
+                            <option value="0xa2287B7db633302774732Ed47CFc9F02f92Fc238">DUM</option>
+                            <option value="token2">Token 2</option>
+                            <!-- Add more tokens as needed -->
+                        </select>
+
+                        <!-- Input fee -->
+                        <input id="deposit-fee-input" type="text" placeholder="Enter fee level" class="flex-grow ml-2 p-2 border rounded"
+                            style="flex: 1;" size="1">
+                    </div>
+                </div>
+                <button id="deposit-btn" class="bg-green-500 text-white p-2 rounded w-full">Confirm</button>
+            </form>
+        </div>
+
+        <!-- Withdraw -->
+        <div class="bg-white p-6 shadow-lg rounded-lg" style="grid-area: withdraw;">
+            <form>
+                <div class="mb-4">
+                    <label class="block mb-2">Withdraw</label>
+                    <div class="flex items-center">
+                        <!-- Input element -->
+                        <input id="withdraw-input" type="text" placeholder="Enter amount" class="flex-grow mr-2 p-2 border rounded"
+                            style="flex: 1;" size="1">
+
+                        <!-- Dropdown for token selection -->
+                        <select id="withdraw-select" class="flex-grow p-2 border rounded" style="flex: 1;">
+                            <option value="0xa2287B7db633302774732Ed47CFc9F02f92Fc238">DUM</option>
+                            <option value="token2">Token 2</option>
+                            <!-- Add more tokens as needed -->
+                        </select>
+                        
+                        <!-- Input fee -->
+                        <input id="withdraw-fee-input" type="text" placeholder="Enter fee level" class="flex-grow ml-2 p-2 border rounded"
+                            style="flex: 1;" size="1">
+                    </div>
+                </div>
+                <button id="withdraw-btn" class="bg-green-500 text-white p-2 rounded w-full">Confirm</button>
+            </form>
+        </div>
+
+        <!-- How to Take a Flash Loan -->
+        <div class="bg-white p-6 shadow-lg rounded-lg" style="grid-area: howto;">
+            <h2 class="text-xl font-semibold mb-4">How to take a Flash Loan?</h2>
+            <p>Instructions here...</p>
+            <p>e.g. OpenZeppelin</p>
+            <p>Link to start project in Remix...</p>
+        </div>
+
+        <!-- Rewards -->
+        <div class="bg-white p-6 shadow-lg rounded-lg" style="grid-area: rewards;">
+            <h2 class="text-xl font-semibold mb-4">Rewards</h2>
+            <!-- Your rewards data goes here -->
+        </div>
+
+        <!-- My Positions -->
+        <div class="bg-white p-6 shadow-lg rounded-lg" style="grid-area: positions;">
+            <h2 class="text-xl font-semibold mb-4">My Positions</h2>
+            <!-- Your positions data goes here -->
+            <table id="my-positions"></table>
+        </div>
+    </main>

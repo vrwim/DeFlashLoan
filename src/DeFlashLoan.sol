@@ -24,8 +24,8 @@ contract DeFlashLoan is IERC3156FlashLender {
         uint rewardDebt;
     }
 
-    event TokenDeposited(address token, uint amount, uint feeLevel);
-    event TokenWithdrawn(address token, uint amount, uint feeLevel);
+    event TokenDeposited(address indexed user, address token, uint amount, uint feeLevel);
+    event TokenWithdrawn(address indexed user, address token, uint amount, uint feeLevel);
     event FlashLoan(address token, uint amount, uint fee);
 
     /// @dev Token address => lowest fee amount (start of doubly linked list)
@@ -100,7 +100,7 @@ contract DeFlashLoan is IERC3156FlashLender {
         // Take ERC20 tokens from user
         IERC20(token).transferFrom(msg.sender, address(this), amount);
 
-        emit TokenDeposited(token, amount, fee);
+        emit TokenDeposited(msg.sender, token, amount, fee);
     }
 
     function withdraw(address token, uint amount, uint fee) external {
@@ -139,7 +139,7 @@ contract DeFlashLoan is IERC3156FlashLender {
         // Give ERC20 tokens to user
         IERC20(token).transfer(msg.sender, amount);
 
-        emit TokenWithdrawn(token, amount, fee);
+        emit TokenWithdrawn(msg.sender, token, amount, fee);
     }
 
     function distributeRewards(address token, uint feeLevel) public returns (uint){
