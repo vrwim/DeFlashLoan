@@ -619,28 +619,26 @@ depositBtn.addEventListener("click", async (event) => {
     console.log("Deposit successful");
 });
 
-const withdrawBtn = document.getElementById("withdraw-btn");
-withdrawBtn.addEventListener("click", async (event) => {
-    // Cancel the default action, if needed
-    event.preventDefault();
-    const value = document.getElementById("withdraw-input").value;
-    const token = document.getElementById("withdraw-select").value;
-    const fee = document.getElementById("withdraw-fee-input").value;
+// const withdrawBtn = document.getElementById("withdraw-btn");
+// withdrawBtn.addEventListener("click", async (event) => {
+//     // Cancel the default action, if needed
+//     event.preventDefault();
+//     const value = document.getElementById("withdraw-input").value;
+//     const token = document.getElementById("withdraw-select").value;
+//     const fee = document.getElementById("withdraw-fee-input").value;
 
-    const amount = ethers.parseEther(value);
-    const tx = await contract.withdraw(token, amount, fee);
-    await tx.wait();
-    console.log("Withdrawal successful");
-});
+//     const amount = ethers.parseEther(value);
+//     const tx = await contract.withdraw(token, amount, fee);
+//     await tx.wait();
+//     console.log("Withdrawal successful");
+// });
 
-// List all of the TokenDeposited events for this user, map to token address and make them unique
 const address = await signer.getAddress();
 const filter = contract.filters.TokenDeposited(address);
 const events = await contract.queryFilter(filter);
 const tokens = events.map((event) => event.args[1]).filter((value, index, self) => self.indexOf(value) === index);
 let userTokens = {};
 for (const token of tokens) {
-    console.log(token);
     const fees = events
         // Only get events for this token
         .filter((event) => event.args[1] === token)
@@ -650,10 +648,9 @@ for (const token of tokens) {
         .filter((value, index, self) => self.indexOf(value) === index);
     userTokens[token] = {};
     for (const fee of fees) {
-        console.log(fee);
         const userInfo = await contract.userInfo(address, token, fee);
-        console.log(userInfo[0]);
-        userTokens[token][fee] = ethers.formatEther(userInfo[0]);
+        // TODO: Fetch token decimals
+        userTokens[token][fee] = {feeLevel: fee, userInfo: userInfo};
     }
 }
 
@@ -662,15 +659,34 @@ console.log(userTokens);
 // Place this data in a table in the element with id "my-positions"
 const table = document.getElementById("my-positions");
 for (const token in userTokens) {
-    const row = table.insertRow();
-    for (const fee in userTokens[token]) {
+    // TODO: fetch token symbol
+    for (const userToken in userTokens[token]) {
+        const row = table.insertRow();
+        row.class = "text-sm font-medium text-left text-gray-700 border-b border-gray-200";
+
         const tokenCell = row.insertCell();
+        tokenCell.class = "px-4 py-3";
         const feeCell = row.insertCell();
+        feeCell.class = "px-4 py-3";
         const amountCell = row.insertCell();
-        // make the token address shorter
+        amountCell.class = "px-4 py-3";
+        const withdrawCell = row.insertCell();
+        // Make a button to withdraw
+        const withdrawBtn = document.createElement("button");
+        withdrawBtn.innerHTML = "Withdraw";
+        withdrawBtn.addEventListener("click", async (event) => {
+            // Cancel the default action, if needed
+            event.preventDefault();
+
+            const amount = ethers.parseEther(value);
+            const tx = await contract.withdraw(token, amount, fee);
+            await tx.wait();
+            console.log("Withdrawal successful");
+        });
+        withdrawCell.appendChild(withdrawBtn);
+
         tokenCell.innerHTML = token.substring(0, 6) + "..." + token.substring(38);
-        feeCell.innerHTML = fee;
-        amountCell.innerHTML = userTokens[token][fee];
-        console.log("Added cell");
+        feeCell.innerHTML = userToken.feeLevel / 10000000 + "%";
+        amountCell.innerHTML = userToken.userInfo[0];
     }
 }

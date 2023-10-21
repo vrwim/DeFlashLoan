@@ -6,7 +6,19 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link href="https://unpkg.com/tailwindcss@^1.0/dist/tailwind.min.css" rel="stylesheet">
     <title>Your Smart Contract Frontend</title>
-    <link rel="stylesheet" href="style.css">
+    <style>
+        .grid-layout {
+            display: grid;
+            grid-gap: 1rem;
+            grid-template-columns: 1fr 1fr 1fr;
+            grid-template-rows: 2fr 2fr 2fr 3fr;
+            grid-template-areas:
+                "graph graph deposit"
+                "graph graph rewards"
+                "graph graph positions"
+                "howto howto positions";
+        }
+    </style>
     <script src="main.js" defer type="module"></script>
     <!-- favicon -->
     <link rel="icon" href="assets/icon.png" type="image/png" sizes="16x16">
@@ -56,32 +68,6 @@
             </form>
         </div>
 
-        <!-- Withdraw -->
-        <div class="bg-white p-6 shadow-lg rounded-lg" style="grid-area: withdraw;">
-            <form>
-                <div class="mb-4">
-                    <label class="block mb-2">Withdraw</label>
-                    <div class="flex items-center">
-                        <!-- Input element -->
-                        <input id="withdraw-input" type="text" placeholder="Enter amount" class="flex-grow mr-2 p-2 border rounded"
-                            style="flex: 1;" size="1">
-
-                        <!-- Dropdown for token selection -->
-                        <select id="withdraw-select" class="flex-grow p-2 border rounded" style="flex: 1;">
-                            <option value="0xa2287B7db633302774732Ed47CFc9F02f92Fc238">DUM</option>
-                            <option value="token2">Token 2</option>
-                            <!-- Add more tokens as needed -->
-                        </select>
-                        
-                        <!-- Input fee -->
-                        <input id="withdraw-fee-input" type="text" placeholder="Enter fee level" class="flex-grow ml-2 p-2 border rounded"
-                            style="flex: 1;" size="1">
-                    </div>
-                </div>
-                <button id="withdraw-btn" class="bg-green-500 text-white p-2 rounded w-full">Confirm</button>
-            </form>
-        </div>
-
         <!-- How to Take a Flash Loan -->
         <div class="bg-white p-6 shadow-lg rounded-lg" style="grid-area: howto;">
             <h2 class="text-xl font-semibold mb-4">How to take a Flash Loan?</h2>
@@ -100,6 +86,18 @@
         <div class="bg-white p-6 shadow-lg rounded-lg" style="grid-area: positions;">
             <h2 class="text-xl font-semibold mb-4">My Positions</h2>
             <!-- Your positions data goes here -->
-            <table id="my-positions"></table>
+            <table class="min-w-full">
+                <thead>
+                    <tr>
+                        <th class="text-left">Token</th>
+                        <th class="text-left">Fee</th>
+                        <th class="text-left">Amount</th>
+                        <th class="text-left">Liquidate</th>
+                    </tr>
+                </thead>
+                <tbody id="my-positions">
+                    <!-- Your positions data goes here -->
+                </tbody>
+            </table>
         </div>
     </main>
