@@ -5,6 +5,9 @@ let provider;
 
 let userTokens = [];
 
+let chart;
+let data;
+
 if (window.ethereum == null) {
     console.log("MetaMask not installed; using read-only defaults");
     provider = ethers.getDefaultProvider();
@@ -19,7 +22,7 @@ if (window.ethereum == null) {
     loginBtn.innerHTML = address;
 }
 
-const contractAddress = "0xEA885F53451044b6D8F0A3134bcFeb6302beB19c";
+const contractAddress = "0x572c74d7e75D1C11f6bdf29b7eE91a2791728d73";
 const contractABI = [
     {
         "anonymous": false,
@@ -604,13 +607,11 @@ depositBtn.addEventListener("click", async (event) => {
     event.preventDefault();
     const value = document.getElementById("deposit-input").value;
     const fee = document.getElementById("deposit-fee-input").value;
-    const token = document.getElementById("deposit-select").value;
+    const token = document.getElementById("token-select").value;
 
     const amount = ethers.parseEther(value);
     const tokenContract = new ethers.Contract(token, ERC20ABI, signer);
     const allowance = await tokenContract.allowance(await signer.getAddress(), contractAddress);
-    console.log(allowance);
-    console.log(amount);
     if (allowance < amount) {
         const tx = await tokenContract.approve(contractAddress, amount);
         await tx.wait();
@@ -622,21 +623,8 @@ depositBtn.addEventListener("click", async (event) => {
 
     // Refresh page after action to reload all items
     reloadPositions();
+    createChart();
 });
-
-// const withdrawBtn = document.getElementById("withdraw-btn");
-// withdrawBtn.addEventListener("click", async (event) => {
-//     // Cancel the default action, if needed
-//     event.preventDefault();
-//     const value = document.getElementById("withdraw-input").value;
-//     const token = document.getElementById("withdraw-select").value;
-//     const fee = document.getElementById("withdraw-fee-input").value;
-
-//     const amount = ethers.parseEther(value);
-//     const tx = await contract.withdraw(token, amount, fee);
-//     await tx.wait();
-//     console.log("Withdrawal successful");
-// });
 
 async function reloadPositions() {
     const address = await signer.getAddress();
@@ -654,12 +642,12 @@ async function reloadPositions() {
             .filter((value, index, self) => self.indexOf(value) === index);
         for (const fee of fees) {
             const userInfo = await contract.userInfo(address, token, fee);
+
             // TODO: Fetch token decimals
-            userTokens.push({token: token, feeLevel: fee, userInfo: userInfo});
+            if (userInfo[0] > 0)
+                userTokens.push({ token: token, feeLevel: fee, userInfo: userInfo });
         }
     }
-
-    console.log(userTokens);
 
     const table = document.getElementById("my-positions");
     table.innerHTML = "";
@@ -669,8 +657,6 @@ async function reloadPositions() {
         const row = table.insertRow();
         row.className = "text-sm font-medium text-left text-gray-700 border-b border-gray-200";
 
-        const tokenCell = row.insertCell();
-        tokenCell.className = "px-4 py-3 border";
         const feeCell = row.insertCell();
         feeCell.className = "px-4 py-3 border";
         const amountCell = row.insertCell();
@@ -685,17 +671,85 @@ async function reloadPositions() {
             // Cancel the default action, if needed
             event.preventDefault();
 
-            const amount = ethers.parseEther(value);
-            const tx = await contract.withdraw(token, amount, fee);
+            const tx = await contract.withdraw(userToken.token, userToken.userInfo[0], userToken.feeLevel);
             await tx.wait();
             console.log("Withdrawal successful");
+
+            // Refresh page after action to reload all items
+            reloadPositions();
+            createChart();
         });
         withdrawCell.appendChild(withdrawBtn);
 
-        tokenCell.innerHTML = userToken.token.substring(0, 6) + "..." + userToken.token.substring(38);
         feeCell.innerHTML = Number(userToken.feeLevel) / 1000000 + "%";
         amountCell.innerHTML = ethers.formatEther(userToken.userInfo[0]);
     }
 }
 
+async function createChart() {
+    // Get the canvas element from the HTML
+    const chartCanvas = document.getElementById('chart');
+
+    // Fetch the data from the smart contract
+    const token = document.getElementById("token-select").value;
+    // Fetch the token fee amount (start of a linked list)
+    const lowestFeeAmount = await contract.lowestFeeAmount(token);
+
+    // Fetch the data for the chart
+    data = [];
+    let currentFee = lowestFeeAmount;
+    while (currentFee > 0) {
+        const pools = await contract.pools(token, currentFee);
+        data.push({ fee: currentFee, amount: pools.thisFeeAmount });
+        currentFee = pools.nextFee;
+    }
+
+    if (chart) {
+        chart.destroy();
+    }
+
+    // Create the chart
+    chart = new Chart(chartCanvas, {
+        type: 'line',
+        data: {
+            labels: data.map((value) => Number(value.fee) / 1_000_000 + "%"),
+            datasets: [{
+                data: data.map((value) => value.amount).reduce((acc, amount, idx) => {
+                    if (idx === 0) {
+                      acc.push(amount);
+                    } else {
+                      acc.push(acc[idx - 1] + amount);
+                    }
+                    return acc;
+                  }, []).map((value) => ethers.formatEther(value)),
+                borderColor: 'rgb(66,153,225)',
+                tension: 0.1
+            }]
+        },
+        options: {
+            plugins: {
+                legend: {
+                    display: false
+                }
+            },
+            scales: {
+                x: {
+                    title: {
+                        display: true,
+                        text: 'Fee (%)'
+                    }
+                },
+                y: {
+                    title: {
+                        display: true,
+                        text: 'Total deposit amount (DUM)'
+                    },
+                    beginAtZero: true
+                }
+            }
+        }
+    });
+}
+
 reloadPositions();
+createChart();

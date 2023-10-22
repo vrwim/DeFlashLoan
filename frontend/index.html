@@ -19,6 +19,7 @@
                 "howto howto positions";
         }
     </style>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="main.js" defer type="module"></script>
     <!-- favicon -->
     <link rel="icon" href="assets/icon.png" type="image/png" sizes="16x16">
@@ -31,6 +32,13 @@
             <img src="assets/icon.png" alt="Your Icon" class="w-16 h-16 mr-2 rounded">
             <!-- Adjust the width and height as per your icon's dimensions -->
             <h1 class="text-3xl font-bold pl-4">DeFlashLoan</h1>
+
+            <!-- Dropdown for token selection -->
+            <select id="token-select" class="m-2 p-2 border rounded" style="flex: 1;">
+                <option value="0xa2287B7db633302774732Ed47CFc9F02f92Fc238">DUM</option>
+                <option value="token2">Token 2</option>
+                <!-- Add more tokens as needed -->
+            </select>
         </div>
 
         <!-- Login Button on the right -->
@@ -40,6 +48,7 @@
         <!-- Pool Statistics / Graph -->
         <div class="bg-white p-6 shadow-lg rounded-lg" style="grid-area: graph;">
             <h2 class="text-xl font-semibold mb-4">Pool Statistics</h2>
+            <canvas id="chart" width="400" height="200"></canvas>
         </div>
 
         <!-- Deposit -->
@@ -49,19 +58,14 @@
                     <label class="block mb-2">Deposit</label>
                     <div class="flex items-center">
                         <!-- Input value -->
-                        <input id="deposit-input" type="text" placeholder="Enter amount" class="flex-grow mr-2 p-2 border rounded"
-                            style="flex: 1;" size="1">
-
-                        <!-- Dropdown for token selection -->
-                        <select id="deposit-select" class="flex-grow p-2 border rounded" style="flex: 1;">
-                            <option value="0xa2287B7db633302774732Ed47CFc9F02f92Fc238">DUM</option>
-                            <option value="token2">Token 2</option>
-                            <!-- Add more tokens as needed -->
-                        </select>
-
+                        <input id="deposit-input" type="text" placeholder="Enter amount"
+                            class="flex-grow mr-2 p-2 border rounded" style="flex: 1;" size="1">
+                        @
                         <!-- Input fee -->
-                        <input id="deposit-fee-input" type="text" placeholder="Enter fee level" class="flex-grow ml-2 p-2 border rounded"
-                            style="flex: 1;" size="1">
+                        <!-- TODO: enter percentage here and multiply with the modifier -->
+                        <input id="deposit-fee-input" type="text" placeholder="Enter fee level"
+                            class="flex-grow ml-2 p-2 border rounded" style="flex: 1;" size="1">
+                        %
                     </div>
                 </div>
                 <button id="deposit-btn" class="bg-green-500 text-white p-2 rounded w-full">Confirm</button>
@@ -89,10 +93,15 @@
             <table class="min-w-full">
                 <thead>
                     <tr>
-                        <th class="px-6 py-3 border bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Token</th>
-                        <th class="px-6 py-3 border bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Fee</th>
-                        <th class="px-6 py-3 border bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Amount</th>
-                        <th class="px-6 py-3 border bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Liquidate</th>
+                        <th
+                            class="px-6 py-3 border bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Fee</th>
+                        <th
+                            class="px-6 py-3 border bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Amount</th>
+                        <th
+                            class="px-6 py-3 border bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Liquidate</th>
                     </tr>
                 </thead>
                 <tbody id="my-positions" class="bg-white divide-y divide-gray-200">
