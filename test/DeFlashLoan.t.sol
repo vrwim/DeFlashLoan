@@ -73,6 +73,9 @@ contract DeFlashLoanTest is Test {
         myContract.deposit(address(dummyToken), 100 * DIGITS_MULTIPLIER, 10);
         myContract.withdraw(address(dummyToken), 100 * DIGITS_MULTIPLIER, 10);
         assertEq(myContract.totalAvailable(address(dummyToken)), 0);
+        (uint amount, uint rewardDebt) = myContract.userInfo(address(this), address(dummyToken), 10);
+        assertEq(amount, 0);
+        assertEq(rewardDebt, 0);
     }
 
     function testPartialWithdraw() public {

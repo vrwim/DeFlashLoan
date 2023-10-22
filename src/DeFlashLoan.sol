@@ -136,6 +136,9 @@ contract DeFlashLoan is IERC3156FlashLender {
         // Subtract from total available
         totalAvailable[token] -= amount;
 
+        // Subtract from user info
+        userInfo[msg.sender][token][fee].amount -= amount;
+
         // Give ERC20 tokens to user
         IERC20(token).transfer(msg.sender, amount);
 
