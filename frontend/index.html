@@ -6,19 +6,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link href="https://unpkg.com/tailwindcss@^1.0/dist/tailwind.min.css" rel="stylesheet">
     <title>Your Smart Contract Frontend</title>
-    <style>
-        .grid-layout {
-            display: grid;
-            grid-gap: 1rem;
-            grid-template-columns: 1fr 1fr 1fr;
-            grid-template-rows: 2fr 2fr 2fr 3fr;
-            grid-template-areas:
-                "graph graph deposit"
-                "graph graph rewards"
-                "graph graph positions"
-                "howto howto positions";
-        }
-    </style>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="main.js" defer type="module"></script>
     <!-- favicon -->
@@ -44,69 +31,118 @@
         <!-- Login Button on the right -->
         <button id="login-btn" class="bg-blue-500 text-white p-2 rounded">LOGIN</button>
     </header>
-    <main class="grid-layout">
-        <!-- Pool Statistics / Graph -->
-        <div class="bg-white p-6 shadow-lg rounded-lg" style="grid-area: graph;">
-            <h2 class="text-xl font-semibold mb-4">Pool Statistics</h2>
-            <canvas id="chart" width="400" height="200"></canvas>
-        </div>
+    <main class="flex flex-row space-x-4">
+        <!-- Left Column (2/3) -->
+        <div class="flex flex-col space-y-4">
 
-        <!-- Deposit -->
-        <div class="bg-white p-6 shadow-lg rounded-lg" style="grid-area: deposit;">
-            <form>
-                <div class="mb-4">
-                    <label class="block mb-2">Deposit</label>
-                    <div class="flex items-center">
-                        <!-- Input value -->
-                        <input id="deposit-input" type="text" placeholder="Enter amount"
-                            class="flex-grow mr-2 p-2 border rounded" style="flex: 1;" size="1">
-                        @
-                        <!-- Input fee -->
-                        <!-- TODO: enter percentage here and multiply with the modifier -->
-                        <input id="deposit-fee-input" type="text" placeholder="Enter fee level"
-                            class="flex-grow ml-2 p-2 border rounded" style="flex: 1;" size="1">
-                        %
-                    </div>
+            <!-- Pool Statistics / Graph -->
+            <div class="bg-white p-6 shadow-lg rounded-lg">
+                <h2 class="text-xl font-semibold mb-4">Pool Statistics</h2>
+                <canvas id="chart" width="400" height="200"></canvas>
+            </div>
+
+            <!-- How to Take a Flash Loan -->
+            <div class="bg-white p-6 shadow-lg rounded-lg">
+                <h2 class="text-2xl font-bold mb-8 text-gray-700">Guide: Taking a Flash Loan</h2>
+
+                <h3 class="text-gray-800">Conform to the IERC3156FlashBorrower Protocol</h3>
+                <p class="m-4 text-gray-600">
+                    Your contract must adhere to the IERC3156FlashBorrower interface. This is a well-known standard of flash loan operations. <br> OpenZeppelin provides a plethora of reference implementations and best practices for smart contract development, including flash loans.
+                    <a href="https://docs.openzeppelin.com/" target="_blank"
+                        class="text-blue-500 hover:text-blue-600 underline">Visit OpenZeppelin's official
+                        documentation</a> to get started.
+                </p>
+                <h3 class="text-gray-800">Utilize the Callback Mechanism</h3>
+                <p class="ml-4 mt-3 text-gray-600">
+                    After ensuring your contract's compliance, initiate a call to the smart contract at 
+                    <code class="inline bg-gray-100 p-1 rounded text-sm font-mono">0xE3c61D89E14EE6bbcab5925ae2edf11c268047E6</code>
+                    using function 
+                     <code class="inline bg-gray-100 p-1 rounded text-sm font-mono">flashLoan(IERC3156FlashBorrower receiver,address token,uint256 amount,bytes calldata data) external returns (bool)</code>.
+                    This call should have the callback specified, ensuring the flash loan's successful execution.
+                </p>
+
+                <div class="mt-8">
+                    <p class="text-sm text-gray-500">
+                        Reminder: Ensure you have enough gas when executing transactions and always handle errors
+                        gracefully
+                        to prevent unexpected failures.
+                    </p>
                 </div>
-                <button id="deposit-btn" class="bg-green-500 text-white p-2 rounded w-full">Confirm</button>
-            </form>
+            </div>
+
         </div>
 
-        <!-- How to Take a Flash Loan -->
-        <div class="bg-white p-6 shadow-lg rounded-lg" style="grid-area: howto;">
-            <h2 class="text-xl font-semibold mb-4">How to take a Flash Loan?</h2>
-            <p>Instructions here...</p>
-            <p>e.g. OpenZeppelin</p>
-            <p>Link to start project in Remix...</p>
-        </div>
+        <!-- Right column (1/3) -->
+        <div class="flex flex-col space-y-4">
 
-        <!-- Rewards -->
-        <div class="bg-white p-6 shadow-lg rounded-lg" style="grid-area: rewards;">
-            <h2 class="text-xl font-semibold mb-4">Rewards</h2>
-            <!-- Your rewards data goes here -->
-        </div>
+            <!-- Deposit -->
+            <div class="bg-white p-6 shadow-lg rounded-lg">
+                <form>
+                    <div class="mb-4">
+                        <label class="block mb-2">Deposit</label>
+                        <div class="flex items-center">
+                            <!-- Input value -->
+                            <input id="deposit-input" type="text" placeholder="Enter amount"
+                                class="flex-grow mr-2 p-2 border rounded" style="flex: 1;" size="1">
+                            @
+                            <!-- Input fee -->
+                            <!-- TODO: enter percentage here and multiply with the modifier -->
+                            <input id="deposit-fee-input" type="text" placeholder="Enter fee level"
+                                class="flex-grow ml-2 p-2 border rounded" style="flex: 1;" size="1">
+                            %
+                        </div>
+                    </div>
+                    <button id="deposit-btn" class="bg-green-500 text-white p-2 rounded w-full">Confirm</button>
+                </form>
+            </div>
 
-        <!-- My Positions -->
-        <div class="bg-white p-6 shadow-lg rounded-lg" style="grid-area: positions;">
-            <h2 class="text-xl font-semibold mb-4">My Positions</h2>
-            <!-- Your positions data goes here -->
-            <table class="min-w-full">
-                <thead>
-                    <tr>
-                        <th
-                            class="px-6 py-3 border bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                            Fee</th>
-                        <th
-                            class="px-6 py-3 border bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                            Amount</th>
-                        <th
-                            class="px-6 py-3 border bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                            Liquidate</th>
-                    </tr>
-                </thead>
-                <tbody id="my-positions" class="bg-white divide-y divide-gray-200">
-                    <!-- Your positions data goes here -->
-                </tbody>
-            </table>
+            <!-- Rewards -->
+            <div class="bg-white p-6 shadow-lg rounded-lg">
+                <h2 class="text-xl font-semibold mb-4">Rewards</h2>
+                <!-- Your rewards data goes here -->
+                <table class="min-w-full">
+                    <thead>
+                        <tr>
+                            <th
+                                class="px-6 py-3 border bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                Fee</th>
+                            <th
+                                class="px-6 py-3 border bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                Rewards</th>
+                            <th
+                                class="px-6 py-3 border bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                Retrieve</th>
+                        </tr>
+                    </thead>
+                    <tbody id="my-rewards" class="bg-white divide-y divide-gray-200">
+                        <!-- Your positions data goes here -->
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- My Positions -->
+            <div class="bg-white p-6 shadow-lg rounded-lg">
+                <h2 class="text-xl font-semibold mb-4">My Positions</h2>
+                <!-- Your positions data goes here -->
+                <table class="min-w-full">
+                    <thead>
+                        <tr>
+                            <th
+                                class="px-6 py-3 border bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                Fee</th>
+                            <th
+                                class="px-6 py-3 border bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                Amount</th>
+                            <th
+                                class="px-6 py-3 border bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                Liquidate</th>
+                        </tr>
+                    </thead>
+                    <tbody id="my-positions" class="bg-white divide-y divide-gray-200">
+                        <!-- Your positions data goes here -->
+                    </tbody>
+                </table>
+            </div>
+
         </div>
     </main>

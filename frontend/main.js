@@ -22,7 +22,7 @@ if (window.ethereum == null) {
     loginBtn.innerHTML = address;
 }
 
-const contractAddress = "0x572c74d7e75D1C11f6bdf29b7eE91a2791728d73";
+const contractAddress = "0xE3c61D89E14EE6bbcab5925ae2edf11c268047E6";
 const contractABI = [
     {
         "anonymous": false,
@@ -606,7 +606,8 @@ depositBtn.addEventListener("click", async (event) => {
     // Cancel the default action, if needed
     event.preventDefault();
     const value = document.getElementById("deposit-input").value;
-    const fee = document.getElementById("deposit-fee-input").value;
+    const fee = document.getElementById("deposit-fee-input").value * 10_000;
+    console.log(fee);
     const token = document.getElementById("token-select").value;
 
     const amount = ethers.parseEther(value);
@@ -681,7 +682,7 @@ async function reloadPositions() {
         });
         withdrawCell.appendChild(withdrawBtn);
 
-        feeCell.innerHTML = Number(userToken.feeLevel) / 1000000 + "%";
+        feeCell.innerHTML = Number(userToken.feeLevel) / 10000 + "%";
         amountCell.innerHTML = ethers.formatEther(userToken.userInfo[0]);
     }
 }
@@ -699,9 +700,9 @@ async function createChart() {
     data = [];
     let currentFee = lowestFeeAmount;
     while (currentFee > 0) {
-        const pools = await contract.pools(token, currentFee);
-        data.push({ fee: currentFee, amount: pools.thisFeeAmount });
-        currentFee = pools.nextFee;
+        const pool = await contract.pools(token, currentFee);
+        data.push({ fee: currentFee, amount: pool.thisFeeAmount, pool: pool });
+        currentFee = pool.nextFee;
     }
 
     if (chart) {
@@ -712,16 +713,16 @@ async function createChart() {
     chart = new Chart(chartCanvas, {
         type: 'line',
         data: {
-            labels: data.map((value) => Number(value.fee) / 1_000_000 + "%"),
+            labels: data.map((value) => Number(value.fee) / 10_000 + "%"),
             datasets: [{
                 data: data.map((value) => value.amount).reduce((acc, amount, idx) => {
                     if (idx === 0) {
-                      acc.push(amount);
+                        acc.push(amount);
                     } else {
-                      acc.push(acc[idx - 1] + amount);
+                        acc.push(acc[idx - 1] + amount);
                     }
                     return acc;
-                  }, []).map((value) => ethers.formatEther(value)),
+                }, []).map((value) => ethers.formatEther(value)),
                 borderColor: 'rgb(66,153,225)',
                 tension: 0.1
             }]
@@ -751,5 +752,66 @@ async function createChart() {
     });
 }
 
-reloadPositions();
-createChart();
+async function calculateRewards() {
+    // userTokens are { token: token, feeLevel: fee, userInfo: userInfo }
+    // data is { fee: fee, amount: amount, pool: pool }
+    // userTokensWithRewards are { token: token, feeLevel: fee, userInfo: userInfo, rewardPerToken: rewardPerToken }
+    // Match the fee levels of the userTokens to the data
+    const userTokensWithRewards = userTokens.map((userToken) => {
+        const dataItem = data.find((dataItem) => dataItem.fee === userToken.feeLevel);
+        return { ...userToken, rewardPerToken: dataItem.pool.rewardPerToken };
+    });
+
+    const table = document.getElementById("my-rewards");
+    table.innerHTML = "";
+
+    for(const index in userTokensWithRewards) {
+        const userTokenWithRewards = userTokensWithRewards[index];
+        // Check if user has rewards for token and fee level
+        const rewards = userTokenWithRewards.userInfo[0] * (BigInt(userTokenWithRewards.rewardPerToken) - BigInt(userTokenWithRewards.userInfo[1])) / BigInt(1_000_000);
+
+
+        if (rewards == 0) {
+            console.log("No rewards for", userTokenWithRewards.token, userTokenWithRewards.feeLevel);
+            continue;
+        }
+
+        const row = table.insertRow();
+        row.className = "text-sm font-medium text-left text-gray-700 border-b border-gray-200";
+        const feeCell = row.insertCell();
+        feeCell.className = "px-4 py-3 border";
+        const rewardCell = row.insertCell();
+        rewardCell.className = "px-4 py-3 border";
+        const retrieveCell = row.insertCell();
+        retrieveCell.className = "px-4 py-3 border";
+        // Make a button to withdraw
+        const retrieveBtn = document.createElement("button");
+        retrieveBtn.innerHTML = "Retrieve";
+        retrieveBtn.className = "bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded";
+        retrieveBtn.addEventListener("click", async (event) => {
+            // Cancel the default action, if needed
+            event.preventDefault();
+
+            const tx = await contract.distributeRewards(userTokenWithRewards.token, userTokenWithRewards.feeLevel);
+            await tx.wait();
+            console.log("Retrieve successful");
+
+            // Refresh page after action to reload all items
+            reloadData();
+        });
+        retrieveCell.appendChild(retrieveBtn);
+
+        feeCell.innerHTML = Number(userTokenWithRewards.feeLevel) / 10000 + "%";
+        rewardCell.innerHTML = ethers.formatEther(rewards);
+    }
+}
+
+async function reloadData() {
+    await Promise.all([
+        reloadPositions(),
+        createChart()
+    ]);
+
+    calculateRewards();
+}
+reloadData();
