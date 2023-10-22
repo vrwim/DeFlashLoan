@@ -3,6 +3,8 @@ import { ethers } from "https://cdnjs.cloudflare.com/ajax/libs/ethers/6.7.0/ethe
 let signer = null;
 let provider;
 
+let userTokens = [];
+
 if (window.ethereum == null) {
     console.log("MetaMask not installed; using read-only defaults");
     provider = ethers.getDefaultProvider();
@@ -617,6 +619,9 @@ depositBtn.addEventListener("click", async (event) => {
     const tx = await contract.deposit(token, amount, fee);
     await tx.wait();
     console.log("Deposit successful");
+
+    // Refresh page after action to reload all items
+    reloadPositions();
 });
 
 // const withdrawBtn = document.getElementById("withdraw-btn");
@@ -633,47 +638,49 @@ depositBtn.addEventListener("click", async (event) => {
 //     console.log("Withdrawal successful");
 // });
 
-const address = await signer.getAddress();
-const filter = contract.filters.TokenDeposited(address);
-const events = await contract.queryFilter(filter);
-const tokens = events.map((event) => event.args[1]).filter((value, index, self) => self.indexOf(value) === index);
-let userTokens = {};
-for (const token of tokens) {
-    const fees = events
-        // Only get events for this token
-        .filter((event) => event.args[1] === token)
-        // Get the fee levels
-        .map((event) => event.args[3])
-        // Make them unique
-        .filter((value, index, self) => self.indexOf(value) === index);
-    userTokens[token] = {};
-    for (const fee of fees) {
-        const userInfo = await contract.userInfo(address, token, fee);
-        // TODO: Fetch token decimals
-        userTokens[token][fee] = {feeLevel: fee, userInfo: userInfo};
+async function reloadPositions() {
+    const address = await signer.getAddress();
+    const filter = contract.filters.TokenDeposited(address);
+    const events = await contract.queryFilter(filter);
+    const tokens = events.map((event) => event.args[1]).filter((value, index, self) => self.indexOf(value) === index);
+    userTokens = [];
+    for (const token of tokens) {
+        const fees = events
+            // Only get events for this token
+            .filter((event) => event.args[1] === token)
+            // Get the fee levels
+            .map((event) => event.args[3])
+            // Make them unique
+            .filter((value, index, self) => self.indexOf(value) === index);
+        for (const fee of fees) {
+            const userInfo = await contract.userInfo(address, token, fee);
+            // TODO: Fetch token decimals
+            userTokens.push({token: token, feeLevel: fee, userInfo: userInfo});
+        }
     }
-}
 
-console.log(userTokens);
+    console.log(userTokens);
 
-// Place this data in a table in the element with id "my-positions"
-const table = document.getElementById("my-positions");
-for (const token in userTokens) {
-    // TODO: fetch token symbol
-    for (const userToken in userTokens[token]) {
+    const table = document.getElementById("my-positions");
+    table.innerHTML = "";
+    for (const index in userTokens) {
+        const userToken = userTokens[index];
+        // TODO: fetch token symbol
         const row = table.insertRow();
-        row.class = "text-sm font-medium text-left text-gray-700 border-b border-gray-200";
+        row.className = "text-sm font-medium text-left text-gray-700 border-b border-gray-200";
 
         const tokenCell = row.insertCell();
-        tokenCell.class = "px-4 py-3";
+        tokenCell.className = "px-4 py-3 border";
         const feeCell = row.insertCell();
-        feeCell.class = "px-4 py-3";
+        feeCell.className = "px-4 py-3 border";
         const amountCell = row.insertCell();
-        amountCell.class = "px-4 py-3";
+        amountCell.className = "px-4 py-3 border";
         const withdrawCell = row.insertCell();
+        withdrawCell.className = "px-4 py-3 border";
         // Make a button to withdraw
         const withdrawBtn = document.createElement("button");
         withdrawBtn.innerHTML = "Withdraw";
+        withdrawBtn.className = "bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded";
         withdrawBtn.addEventListener("click", async (event) => {
             // Cancel the default action, if needed
             event.preventDefault();
@@ -685,8 +692,10 @@ for (const token in userTokens) {
         });
         withdrawCell.appendChild(withdrawBtn);
 
-        tokenCell.innerHTML = token.substring(0, 6) + "..." + token.substring(38);
-        feeCell.innerHTML = userToken.feeLevel / 10000000 + "%";
-        amountCell.innerHTML = userToken.userInfo[0];
+        tokenCell.innerHTML = userToken.token.substring(0, 6) + "..." + userToken.token.substring(38);
+        feeCell.innerHTML = Number(userToken.feeLevel) / 1000000 + "%";
+        amountCell.innerHTML = ethers.formatEther(userToken.userInfo[0]);
     }
 }
+
+reloadPositions();
